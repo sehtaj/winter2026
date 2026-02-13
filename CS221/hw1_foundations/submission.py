@@ -23,7 +23,9 @@ def linear_project(x: np.ndarray, W: np.ndarray, b: np.ndarray) -> np.ndarray:
     - No Python loops.
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+    y = einsum(x, W, 'b d_in, d_in d_out -> b d_out')
+    y = y + b
+    return y
     # END_YOUR_CODE
 
 
@@ -38,7 +40,7 @@ def split_last_dim_pattern() -> str:
     where x is a tensor with shape (B, D).
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+    return 'b (g d) -> b g d'
     # END_YOUR_CODE
 
 
@@ -62,7 +64,12 @@ def normalized_inner_products(A: np.ndarray, C: np.ndarray, normalize: bool = Tr
     - Think about the Einstein notation pattern for batched dot products.
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+    S = einsum(A, C, 'b m d, b n d -> b m n')
+    if normalize:
+        d = A.shape[2]
+        S = S / np.sqrt(d)
+
+    return S
     # END_YOUR_CODE
 
 
@@ -84,7 +91,6 @@ def mask_strictly_upper(scores: np.ndarray) -> np.ndarray:
     Note that the data type should be floats.
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
     # END_YOUR_CODE
 
 
@@ -105,7 +111,7 @@ def prob_weighted_sum_einsum() -> str:
     where P is a tensor with shape (B, N) and V is a tensor with shape (B, N, D).
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+    return 'b n, b n d -> b d'
     # END_YOUR_CODE
 
 
@@ -124,7 +130,8 @@ def gradient_warmup(w: np.ndarray, c: np.ndarray) -> np.ndarray:
     - grad: (d,)
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+    grad = 2 * (w - c)
+    return grad
     # END_YOUR_CODE
 
 
@@ -144,8 +151,12 @@ def matrix_grad(A: np.ndarray, B: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     - Use broadcasting to replicate values to the correct shapes.
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
-    # END_YOUR_CODE
+    sum_A = np.sum(A, axis=0)
+    sum_B = np.sum(B, axis=1)
+    grad_A = np.repeat(sum_B[None, :], A.shape[0], axis=0)
+    grad_B = np.repeat(sum_A[:, None], B.shape[1], axis=1)
+    return grad_A, grad_B 
+   # END_YOUR_CODE
 
 
 def lsq_grad(w: np.ndarray, A: np.ndarray, b: np.ndarray) -> np.ndarray:
@@ -165,7 +176,6 @@ def lsq_grad(w: np.ndarray, A: np.ndarray, b: np.ndarray) -> np.ndarray:
     - No Python loops.
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
     # END_YOUR_CODE
 
 
@@ -191,7 +201,6 @@ def lsq_finite_diff_grad(w: np.ndarray,
     - No Python loops over gradient components.
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
     # END_YOUR_CODE
 
 
@@ -217,5 +226,12 @@ def gradient_descent_quadratic(x: np.ndarray, w: np.ndarray, theta0: float, lr: 
     Gradient: df/dθ = 2 * sum_i w_i * (θ - x_i).
     """
     # BEGIN_YOUR_CODE
-    # TODO: Implement
+
+    theta = theta0
+
+    for i in range(num_steps):
+        grad = 2 * np.sum(w * (theta - x))
+        theta = theta - lr * grad
+
+    return theta
     # END_YOUR_CODE
