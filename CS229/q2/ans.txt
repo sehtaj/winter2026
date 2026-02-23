@@ -1,0 +1,3 @@
+When tau is very small (like 0.01), the boundary becomes very wiggly and fits closely around training points.
+When tau is medium (0.1 to 0.5), the boundary is smooth but still non-linear.
+When tau is large (5.0), the boundary becomes almost linear and behaves like ordinary logistic regression.
