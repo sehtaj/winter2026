@@ -59,7 +59,10 @@ def value_iteration(
         - Returns: An np.ndarray of shape (num_states, num_actions) containing the Q-values.
         """
         # BEGIN_YOUR_CODE (our solution is 2 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        future_values = discount * v[np.newaxis, np.newaxis, :]
+        bellman_values = rewards + future_values
+        q_values = np.sum(transitions * bellman_values, axis=2)
+        return q_values
         # END_YOUR_CODE
 
     def compute_policy(q: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -72,7 +75,12 @@ def value_iteration(
                    2. `best_values`: An array of shape (num_states,) with the Q-value corresponding to each best action.
         """
         # BEGIN_YOUR_CODE (our solution is 4 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        masked_q = np.where(action_mask, q, -np.inf)
+        q_with_tiebreak = masked_q + tie_breaker
+        best_actions = np.argmax(q_with_tiebreak, axis=1)
+        best_values = masked_q[np.arange(num_states), best_actions]
+        best_values = np.where(np.any(action_mask, axis=1), best_values, 0.0)
+        return best_actions, best_values
         # END_YOUR_CODE
 
     # Implement the value iteration algorithm.
@@ -87,7 +95,23 @@ def value_iteration(
 
     print('Running value iteration...')
     # BEGIN_YOUR_CODE (our solution is 18 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    v = np.zeros(num_states, dtype=np.float64)
+
+    while True:
+        q = compute_q(v)
+        _, new_v = compute_policy(q)
+        if np.max(np.abs(new_v - v)) < epsilon:
+            v = new_v
+            break
+        v = new_v
+
+    final_q = compute_q(v)
+    best_action_indices, _ = compute_policy(final_q)
+    has_valid_action = np.any(action_mask, axis=1)
+
+    pi = np.full(num_states, None, dtype=object)
+    pi[has_valid_action] = action_ids[best_action_indices[has_valid_action]]
+    return pi
     # END_YOUR_CODE
 
 
@@ -186,7 +210,11 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
         policy_idx = self.pi_indices[state_idx]
 
         # BEGIN_YOUR_CODE (our solution is 5 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        if policy_idx < 0:
+            return random.choice(self.actions)
+        if explore and random.random() < exploration_prob:
+            return random.choice(self.actions)
+        return self.actions[policy_idx]
         # END_YOUR_CODE
 
     # We will call this function with (s, a, r, s'), which is used to update counts and rewards.
@@ -203,7 +231,27 @@ class ModelBasedMonteCarlo(util.RLAlgorithm):
 
         if self.num_iters > 0 and self.num_iters % self.calc_val_iter_every == 0:
             # BEGIN_YOUR_CODE (our solution is 21 line(s) of code, but don't worry if you deviate from this)
-            raise Exception("Not implemented yet")
+            total_counts = np.sum(self.transition_counts, axis=2, keepdims=True)
+            transition_probs = np.divide(
+                self.transition_counts,
+                total_counts,
+                out=np.zeros_like(self.transition_counts),
+                where=total_counts > 0,
+            )
+            avg_rewards = np.divide(
+                self.reward_sums,
+                self.transition_counts,
+                out=np.zeros_like(self.reward_sums),
+                where=self.transition_counts > 0,
+            )
+            self.pi_actions = value_iteration(
+                transition_probs,
+                avg_rewards,
+                self.discount,
+                valid_actions=self.valid_actions,
+                state_ids=self.state_ids,
+                action_ids=self.actions_array,
+            )
             # END_YOUR_CODE
             self._sync_policy_indices()
 
@@ -253,7 +301,10 @@ class TabularQLearning(util.RLAlgorithm):
             exploration_prob = exploration_prob / math.log(self.num_iters - 100000 + 1)
         state_idx = int(self.state_to_index(state))
         # BEGIN_YOUR_CODE (our solution is 4 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        if explore and random.random() < exploration_prob:
+            return random.choice(self.actions)
+        best_idx = int(np.argmax(self.q[state_idx]))
+        return self.actions[best_idx]
         # END_YOUR_CODE
 
     # Call this function to get the step size to update the weights.
@@ -267,7 +318,13 @@ class TabularQLearning(util.RLAlgorithm):
         matches = np.where(self.actions_array == action)[0]
         action_idx = int(matches[0])
         # BEGIN_YOUR_CODE (our solution is 9 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        prediction = self.q[state_idx, action_idx]
+        if terminal:
+            target = reward
+        else:
+            next_idx = int(self.state_to_index(next_state))
+            target = reward + self.discount * float(np.max(self.q[next_idx]))
+        self.q[state_idx, action_idx] += self.get_step_size() * (target - prediction)
         # END_YOUR_CODE
 
 ############################################################
@@ -295,7 +352,13 @@ def fourier_feature_extractor(
     # doing efficient arithmetic broadcasting in numpy.
 
     # BEGIN_YOUR_CODE (our solution is 7 line(s) of code, but don't worry if you deviate from this)
-    raise Exception("Not implemented yet")
+    state_arr = np.asarray(state, dtype=np.float64)
+    scale_arr = np.asarray(scale, dtype=np.float64)
+    scaled_state = state_arr * scale_arr
+
+    coeff_axes = [np.arange(max_coeff + 1, dtype=np.float64) for _ in range(len(state_arr))]
+    coeff_grid = np.stack(np.meshgrid(*coeff_axes, indexing='ij'), axis=-1).reshape(-1, len(state_arr))
+    features = np.cos(np.pi * (coeff_grid @ scaled_state))
     # END_YOUR_CODE
 
     return features
@@ -323,7 +386,9 @@ class FunctionApproxQLearning(util.RLAlgorithm):
 
     def get_q(self, state: np.ndarray, action: int) -> float:
         # BEGIN_YOUR_CODE (our solution is 3 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        action_idx = int(self.actions.index(action))
+        features = self.feature_extractor(state)
+        return float(np.dot(features, self.w[:, action_idx]))
         # END_YOUR_CODE
 
     # This algorithm will produce an action given a state.
@@ -340,7 +405,11 @@ class FunctionApproxQLearning(util.RLAlgorithm):
             exploration_prob = exploration_prob / math.log(self.num_iters - 100000 + 1)
 
         # BEGIN_YOUR_CODE (our solution is 5 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        if explore and random.random() < exploration_prob:
+            return random.choice(self.actions)
+        q_values = np.array([self.get_q(state, action) for action in self.actions], dtype=np.float64)
+        best_idx = int(np.argmax(q_values))
+        return int(self.actions[best_idx])
         # END_YOUR_CODE
 
     # Call this function to get the step size to update the weights.
@@ -354,7 +423,22 @@ class FunctionApproxQLearning(util.RLAlgorithm):
     # step_size * (new_value - old_value) * features
     def incorporate_feedback(self, state: np.ndarray, action: int, reward: float, next_state: np.ndarray, terminal: bool) -> None:
         # BEGIN_YOUR_CODE (our solution is 10 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        action_idx = int(self.actions.index(action))
+        prediction = self.get_q(state, action)
+
+        if terminal:
+            target = reward
+        else:
+            next_q_values = []
+            for next_action in self.actions:
+                next_q_values.append(self.get_q(next_state, next_action))
+            next_q_values = np.array(next_q_values, dtype=np.float64)
+            target = reward + self.discount * float(np.max(next_q_values))
+
+        step_size = self.get_step_size()
+        features = self.feature_extractor(state)
+        error = target - prediction
+        self.w[:, action_idx] = self.w[:, action_idx] + step_size * error * features
         # END_YOUR_CODE
 
 ############################################################
@@ -385,7 +469,22 @@ class ConstrainedQLearning(FunctionApproxQLearning):
             exploration_prob = exploration_prob / math.log(self.num_iters - 100000 + 1)
 
         # BEGIN_YOUR_CODE (our solution is 18 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        position, velocity = float(state[0]), float(state[1])
+        valid_actions = []
+        for action in self.actions:
+            next_velocity = velocity + (action - 1) * self.force - math.cos(3 * position) * self.gravity
+            if self.max_speed is None or abs(next_velocity) < self.max_speed:
+                valid_actions.append(action)
+
+        if len(valid_actions) == 0:
+            return None
+
+        if explore and random.random() < exploration_prob:
+            return random.choice(valid_actions)
+
+        q_values = np.array([self.get_q(state, action) for action in valid_actions], dtype=np.float64)
+        best_idx = int(np.argmax(q_values))
+        return int(valid_actions[best_idx])
         # END_YOUR_CODE
 
 ############################################################
