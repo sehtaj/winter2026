@@ -179,7 +179,41 @@ class MinimaxAgent(MultiAgentSearchAgent):
         """
 
         # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        def minimax(state: GameState, depth: int, agent_index: int) -> float:
+            legal_actions = state.get_legal_actions(agent_index)
+            if depth == self.depth or state.is_win() or state.is_lose() or not legal_actions:
+                return self.evaluation_function(state)
+
+            next_agent = (agent_index + 1) % state.get_num_agents()
+            next_depth = depth + 1 if next_agent == 0 else depth
+
+            scores = [
+                minimax(
+                    state.generate_successor(agent_index, action),
+                    next_depth,
+                    next_agent,
+                )
+                for action in legal_actions
+            ]
+
+            if agent_index == 0:
+                return max(scores)
+            return min(scores)
+
+        next_agent = (0 + 1) % game_state.get_num_agents()
+        next_depth = 1 if next_agent == 0 else 0
+        best_score = float("-inf")
+        best_action = Directions.STOP
+        for action in game_state.get_legal_actions(0):
+            score = minimax(
+                game_state.generate_successor(0, action),
+                next_depth,
+                next_agent,
+            )
+            if score > best_score:
+                best_score = score
+                best_action = action
+        return best_action
         # END_YOUR_CODE
 
 ######################################################################################
@@ -199,7 +233,70 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
 
         # BEGIN_YOUR_CODE (our solution is 43 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        def alphabeta(state: GameState, depth: int, agent_index: int, alpha: float, beta: float) -> float:
+            legal_actions = state.get_legal_actions(agent_index)
+            if depth == self.depth or state.is_win() or state.is_lose() or not legal_actions:
+                return self.evaluation_function(state)
+
+            next_agent = (agent_index + 1) % state.get_num_agents()
+            next_depth = depth + 1 if next_agent == 0 else depth
+
+            if agent_index == 0:
+                value = float("-inf")
+                for action in legal_actions:
+                    value = max(
+                        value,
+                        alphabeta(
+                            state.generate_successor(agent_index, action),
+                            next_depth,
+                            next_agent,
+                            alpha,
+                            beta,
+                        ),
+                    )
+                    if value > beta:
+                        return value
+                    alpha = max(alpha, value)
+                return value
+
+            value = float("inf")
+            for action in legal_actions:
+                value = min(
+                    value,
+                    alphabeta(
+                        state.generate_successor(agent_index, action),
+                        next_depth,
+                        next_agent,
+                        alpha,
+                        beta,
+                    ),
+                )
+                if value < alpha:
+                    return value
+                beta = min(beta, value)
+            return value
+
+        next_agent = (0 + 1) % game_state.get_num_agents()
+        next_depth = 1 if next_agent == 0 else 0
+        alpha = float("-inf")
+        beta = float("inf")
+        best_score = float("-inf")
+        best_action = Directions.STOP
+        for action in game_state.get_legal_actions(0):
+            score = alphabeta(
+                game_state.generate_successor(0, action),
+                next_depth,
+                next_agent,
+                alpha,
+                beta,
+            )
+            if score > best_score:
+                best_score = score
+                best_action = action
+            if best_score > beta:
+                return best_action
+            alpha = max(alpha, best_score)
+        return best_action
         # END_YOUR_CODE
 
 ######################################################################################
@@ -220,7 +317,41 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         """
 
         # BEGIN_YOUR_CODE (our solution is 22 line(s) of code, but don't worry if you deviate from this)
-        raise Exception("Not implemented yet")
+        def expectimax(state: GameState, depth: int, agent_index: int) -> float:
+            legal_actions = state.get_legal_actions(agent_index)
+            if depth == self.depth or state.is_win() or state.is_lose() or not legal_actions:
+                return self.evaluation_function(state)
+
+            next_agent = (agent_index + 1) % state.get_num_agents()
+            next_depth = depth + 1 if next_agent == 0 else depth
+
+            scores = [
+                expectimax(
+                    state.generate_successor(agent_index, action),
+                    next_depth,
+                    next_agent,
+                )
+                for action in legal_actions
+            ]
+
+            if agent_index == 0:
+                return max(scores)
+            return sum(scores) / len(scores)
+
+        next_agent = (0 + 1) % game_state.get_num_agents()
+        next_depth = 1 if next_agent == 0 else 0
+        best_score = float("-inf")
+        best_action = Directions.STOP
+        for action in game_state.get_legal_actions(0):
+            score = expectimax(
+                game_state.generate_successor(0, action),
+                next_depth,
+                next_agent,
+            )
+            if score > best_score:
+                best_score = score
+                best_action = action
+        return best_action
         # END_YOUR_CODE
 
 ######################################################################################
