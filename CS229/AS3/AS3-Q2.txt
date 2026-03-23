@@ -1,0 +1,36 @@
+Q2. VC Dimension
+
+(1) h(x) = 1{ x > a }
+VC dimension = 1
+
+A single point can be labeled both 0 and 1 by choosing a on either side of the point.
+However, for two points x1 < x2, the labeling (1,0) cannot be achieved since the function can only switch once.
+
+⸻
+
+(2) h(x) = 1{ a < x < b }
+VC dimension = 2
+
+For two points, we can choose the interval to include none, both, or exactly one of them, so all labelings are possible.
+For three points x1 < x2 < x3, the labeling (1,0,1) cannot be achieved because a single interval cannot exclude the middle point while including the others.
+
+⸻
+
+(3) h(x) = 1{ a sin(x) > 0 }
+VC dimension = 1
+
+The parameter a only changes the sign of sin(x), so we can control the label of a single point.
+For two points, labels cannot be assigned independently because both flip together when the sign changes.
+
+⸻
+
+(4) h(x) = 1{ sin(x + a) > 0 }
+VC dimension = 2
+
+The parameter a shifts the sine wave horizontally, allowing us to correctly label any two points.
+However, for three points, not all labelings are possible (for example, 1,0,1), because the positive region of the sine function is continuous and cannot skip points arbitrarily.
+
+⸻
+
+Final answer:
+1, 2, 1, 2
