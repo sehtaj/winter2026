@@ -1,0 +1,5 @@
+As λ increases, the regularization term becomes stronger, which forces more components of θ to become exactly zero.
+For very small λ, the solution is close to ordinary least squares and most features are retained.
+As λ grows larger, only the most important features (which are strongly correlated with the target) remain non-zero
+
+So, l1 regularization performs implicit feature selection by eliminating irrelevant or weak features from the model.
